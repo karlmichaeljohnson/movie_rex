@@ -21,7 +21,7 @@
 <div class="page-header" id="banner">
   <div class="row">
     <div class="col-lg-8 col-md-7 col-sm-6">
-      <h1><i class="fas fa-film"></i>&nbsp;Movie Recs</h1>
+      <h1><i class="fas fa-tachometer-alt"></i>&nbsp;Dashboard</h1>
       <!-- <p class="lead">Keep track of the movies your friends recommend.</p> -->
     </div>
   </div>
@@ -39,28 +39,29 @@
     {% for recommendation in not_watched %}
     {% set days_old = (today - recommendation.created).days %}
     <div class="card text-white bg-{% if days_old < 10 %}primary{% elif days_old >=10 and days_old < 30 %}warning{% else %}danger{% endif %} border-primary mb-3" style="max-width: 20rem;">
-      <div class="card-header">{{ recommendation.created.strftime('%B %d, %Y') }}<span class="text-muted">&nbsp;&bullet;&nbsp;</span><span class="text-{% if days_old < 10 %}muted{% elif days_old >=10 and days_old < 30 %}warning{% else %}danger{% endif %}"><em>{{ days_old }} days</em></span></div>
+      <div class="card-header">{{ recommendation.created.strftime('%B %-d, %Y') }}<span class="text-muted"> (added)&nbsp;&bullet;&nbsp;</span><span class="text-{% if days_old < 10 %}muted{% elif days_old >=10 and days_old < 30 %}warning{% else %}danger{% endif %}"><em>{{ days_old }} days</em></span></div>
       <div class="card-body">
         <h4 class="card-title">{{ recommendation.name }}</h4>
         <hr>
-        <p class="card-text"><span class="text-muted">{{ recommendation.recommender.name }}</span></p>
+        <p class="card-text"><span class="text-muted">by {{ recommendation.recommender.name }}</span></p>
 
-        <div class="btn-group special" role="group" aria-label="options">
+        <!-- <div class="btn-group special" role="group" aria-label="options"> -->
 
           <!-- Watch button -->
           <form action="{{ url_for('watch', recommendation_id=recommendation.id) }}" method="POST">
-            <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-eye fa-fw"></i>&nbsp;Watch</button>
+            <button type="submit" class="btn btn-success btn-sm btn-block"><i class="fas fa-eye fa-fw"></i>&nbsp;Watch</button>
           </form>
 
           <!-- Trash can -->
           <form action="{{ url_for('delete_recommendation', recommendation_id=recommendation.id) }}", method="POST">
-            <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt fa-fw"></i>&nbsp;Archive</button>
+            <button type="submit" class="btn btn-danger btn-sm btn-block"><i class="fas fa-trash-alt fa-fw"></i>&nbsp;Archive</button>
           </form>
 
           <!-- Find dropdown button -->          
-          <button type="button" class="btn btn-info btn-sm"><i class="fas fa-search fa-fw"></i>&nbsp;Find</button>
-          <div class="btn-group" role="group">
-            <button id="bgnGroupDrop{{ recommendation.id }}" type="button" class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+          
+          <div class="btn-group special" role="group">
+            <!-- <button type="button" class="btn btn-info btn-sm"><i class="fas fa-search fa-fw"></i>&nbsp;Find</button> -->
+            <button id="bgnGroupDrop{{ recommendation.id }}" type="submit" class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fas fa-search fa-fw"></i>&nbsp;Find&nbsp;</button>
             <div class="dropdown-menu" aria-labelledby="bgnGroupDrop{{ recommendation.id }}">
               <a class="dropdown-item" href="{{ recommendation.rotten_search }}" target="_blank">Rotten Tomatoes</a>
               <div class="dropdown-divider"></div>
@@ -68,13 +69,13 @@
               <a class="dropdown-item" href="{{ recommendation.hulu_search }}" target="_blank">Hulu</a>
             </div>
           </div>
-        </div>
+        <!-- </div> -->
       </div>
     </div>
     {% endfor %}
 
     <!-- Popover controls for "new recommendation" -->
-    <button type="button" id="new_recs_popover" class="btn btn-secondary btn-block" title="New Recommendation" data-container="body" data-toggle="popover" data-container=".container-fluid" viewport="container"><i class="fas fa-plus"></i>&nbsp;Add recommendation</button>
+    <button type="button" id="new_recs_popover" class="btn btn-secondary btn-block" title="New Recommendation" data-container="body" data-toggle="popover"><i class="fas fa-plus"></i>&nbsp;Add recommendation</button>
     <div id="new_recs_content" style="display:none;">
       <form action="{{ url_for('add_recommendation') }}" method="POST" id="form">
         <fieldset>
@@ -116,15 +117,18 @@
     {% for recommendation in watched %}
     {% set days_old = (today - recommendation.created).days %}
     <div class="card text-white bg-primary border-primary mb-3" style="max-width: 20rem;">
-      <div class="card-header">Watched {{ recommendation.watched.strftime('%B %d, %Y') }}</div>
+      <div class="card-header">{{ recommendation.watched.strftime('%B %-d, %Y') }} <span class="text-muted">(watched)</span></div>
       <div class="card-body">
         <h4 class="card-title">{{ recommendation.name }}</h4>
         <hr>
-        <p class="card-text"><span class="text-muted">{{ recommendation.recommender.name }} &bullet; {{ recommendation.created.strftime('%b %d, %Y') }}</span></p>
+        <p class="card-text"><span class="text-muted">by {{ recommendation.recommender.name }} on {{ recommendation.created.strftime('%-m/%-d/%y') }}</span></p>
 
         <!-- Review button -->
         <form action="{{ url_for('add_review', recommendation_id=recommendation.id) }}", method="GET">
-          <button type="submit" class="btn btn-warning btn-sm btn-block"><i class="fas fa-pencil-alt fa-fw"></i>&nbsp;Review</button>
+          <button type="submit" class="btn btn-success btn-sm btn-block"><i class="fas fa-pencil-alt fa-fw"></i>&nbsp;Review</button>
+        </form>
+        <form action="{{ url_for('unwatch', recommendation_id=recommendation.id) }}", method="POST">
+          <button type="submit" class="btn btn-danger btn-sm btn-block"><i class="fa fa-undo"></i>&nbsp;Unwatch</button>
         </form>
       </div>
     </div>
@@ -136,16 +140,26 @@
     <h2>Reviewed</h2>
     <hr>
     {% for recommendation in reviewed %}
+    {% set review_list = recommendation.review.split(' ') %}
+    {% set truncated_review_list = review_list[:12] %}
+    {% set truncated_review = ' '.join(truncated_review_list) %}
     <div class="card text-white bg-primary border-primary mb-3" style="max-width: 20rem;">
       <div class="card-header"><span style="color: #ffbf00;">{{ '★' * recommendation.rating }}</span><span style="color: #000000;">{{ '★' * (5 - recommendation.rating) }}</span></div>
       <div class="card-body">
         <h4 class="card-title">{{ recommendation.name }}</h4>
         <hr>
-        <p class="card-text"><span class="text-muted">{{ recommendation.recommender.name }} &bullet; {{ recommendation.created.strftime('%b %d, %Y') }}</span></p>
+        <p class="card-text"><span class="text-muted">by {{ recommendation.recommender.name }} on {{ recommendation.created.strftime('%-m/%-d/%y') }}</span></p>
+        <blockquote class="blockquote text-right"><small><i class="fa fa-quote-left"></i>&nbsp;<em>{{ truncated_review }}{{ '&hellip;'|safe if review_list|length >= 12 }}</em></small></blockquote>
 
         <!-- Review button -->
         <form action="{{ url_for('read_review', recommendation_id=recommendation.id) }}", method="GET">
           <button type="submit" class="btn btn-success btn-sm btn-block"><i class="fas fa-book fa-fw"></i>&nbsp;Read Review</button>
+        </form>
+        <form action="{{ url_for('edit_review', recommendation_id=recommendation.id) }}", method="GET">
+          <button type="submit" class="btn btn-warning btn-sm btn-block"><i class="fas fa-pencil-alt fa-fw"></i>&nbsp;Edit Review</button>
+        </form>
+        <form action="{{ url_for('unreview', recommendation_id=recommendation.id) }}", method="POST">
+          <button type="submit" class="btn btn-danger btn-sm btn-block"><i class="fa fa-undo"></i>&nbsp;Unreview</button>
         </form>
       </div>
     </div>

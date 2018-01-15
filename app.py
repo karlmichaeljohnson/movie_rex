@@ -1,7 +1,6 @@
 """Initialize Stepdad."""
 
 from datetime import datetime, timedelta
-# from dateutil.parser import parse
 from urllib.parse import quote, quote_plus, urlencode
 from uuid import uuid4
 
@@ -17,7 +16,6 @@ from flask_login import (
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm, RecaptchaField
 from sqlalchemy import exc, and_  # , or_
-# from sqlalchemy.orm import backref, relationship
 from wtforms import (
     SubmitField, StringField, PasswordField,
     TextAreaField, BooleanField,
@@ -163,10 +161,6 @@ class SignUpForm(FlaskForm):
 class ReviewForm(FlaskForm):
     """Instantiate the review form."""
 
-    # rating = IntegerField('rating', validators=[
-    #     InputRequired(),
-    #     NumberRange(
-    #         min=1, max=5, message='Must be an integer between 1 and 5.')])
     rating = SelectField(
         'rating',
         choices=[
@@ -375,7 +369,7 @@ def index():
 @login_required
 def account():
     """Render the account view."""
-    return 'To-do.'
+    return render_template('about.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -548,6 +542,21 @@ def watch(recommendation_id):
     return redirect(url_for('index'))
 
 
+@app.route('/unwatch/<recommendation_id>', methods=['POST'])
+@login_required
+def unwatch(recommendation_id):
+    """Render the view for marking a recommendation as watched."""
+    try:
+        recommendation = Recommendation.query.filter_by(
+            id=recommendation_id).one()
+        recommendation.watched = None
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return 'There was an error.'
+    return redirect(url_for('index'))
+
+
 @app.route('/add_review/<recommendation_id>', methods=['GET', 'POST'])
 @login_required
 def add_review(recommendation_id):
@@ -569,6 +578,48 @@ def add_review(recommendation_id):
 
     return render_template(
         'add_review.html', form=form, recommendation=recommendation)
+
+
+@app.route('/edit_review/<recommendation_id>', methods=['GET', 'POST'])
+@login_required
+def edit_review(recommendation_id):
+    """Render the view for marking a recommendation as watched."""
+    form = ReviewForm()
+
+    recommendation = Recommendation.query.filter_by(
+        id=recommendation_id).one()
+
+    if request.method == 'POST' and form.validate_on_submit():
+        recommendation.rating = form.rating.data
+        recommendation.review = form.review.data
+        try:
+            db.session.commit()
+            return redirect(url_for('index'))
+        except:
+            db.session.rollback()
+            return 'There was an error.'
+
+    return render_template(
+        'edit_review.html',
+        recommendation=recommendation,
+        form=form)
+
+
+@app.route('/unreview/<recommendation_id>', methods=['POST'])
+@login_required
+def unreview(recommendation_id):
+    """Render the view for marking a recommendation as watched."""
+    try:
+        recommendation = Recommendation.query.filter_by(
+            id=recommendation_id).one()
+        recommendation.rating = None
+        recommendation.review = None
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return 'There was an error.'
+
+    return redirect(url_for('index'))
 
 
 @app.route('/read_review/<recommendation_id>', methods=['GET'])

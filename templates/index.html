@@ -1,34 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Based on a theme, "Slate", by Thomas Park: http://thomaspark.co
-         Code released under the MIT License:
-         https://github.com/thomaspark/bootswatch/blob/master/LICENSE 
-
-         The MIT License (MIT)
-
-         Copyright (c) 2013 Thomas Park
-         
-         Permission is hereby granted, free of charge, to any person obtaining a copy
-         of this software and associated documentation files (the "Software"), to deal
-         in the Software without restriction, including without limitation the rights
-         to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-         copies of the Software, and to permit persons to whom the Software is
-         furnished to do so, subject to the following conditions:
-         
-         The above copyright notice and this permission notice shall be included in
-         all copies or substantial portions of the Software.
-         
-         THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-         IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-         FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-         AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-         LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-         THE SOFTWARE.
-      -->
     <meta charset="utf-8">
-    <title>Movie Recs&nbsp;|&nbsp;{% block title %}{% endblock %}</title>
+    <title>Whole Hog Movie Rex&nbsp;|&nbsp;{% block title %}{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" media="screen">
@@ -41,10 +15,16 @@
   <body>
     <div class="navbar navbar-expand-lg fixed-top navbar-dark bg-primary">
       <div class="container">
-        <a href="{{ url_for('index') }}" class="navbar-brand"><i class="fas fa-film"></i>&nbsp;Movie Recs</a>
+        <a href="{{ url_for('index') }}" class="navbar-brand"><i class="fas fa-film"></i>&nbsp;Whole Hog Movie Rex</a>
         <div class="collapse navbar-collapse" id="navbarResponsive">
           {% if current_user.is_authenticated %}
           <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" href="#"><i class="fa fa-users fa-fw"></i>&nbsp;Recommenders</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#"><i class="fas fa-trash-alt fa-fw"></i>&nbsp;Archived</a>
+            </li>
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('invite') }}"><i class="fas fa-share-square"></i>&nbsp;Invite</a>
             </li>
@@ -108,10 +88,9 @@
               <li><a href="https://www.javascript.com/" target="_blank"><i class="fab fa-js-square fa-fw"></i></a></li>
               <li><a href="https://www.w3.org/html/" target="_blank"><i class="fab fa-html5 fa-fw"></i></a></li>
               <li><a href="https://www.w3.org/Style/CSS/" target="_blank"><i class="fab fa-css3-alt fa-fw"></i></a></li>
-              <li><a href="http://fontawesome.io/" target="_blank"><i class="fab fa-font-awesome-flag fa-fw"></i></a></li>
+              <li><a href="https://fontawesome.com/" target="_blank"><i class="fab fa-font-awesome-flag fa-fw"></i></a></li>
               <li><a href="http://flask.pocoo.org/" target="_blank">Flask</a></li>
               <li><a href="https://getbootstrap.com/" target="_blank">Bootstrap</a></li>
-              <li><a href="https://www.heroku.com/" target="_blank">Heroku</a></li>
             </ul>
 
           </div>
@@ -120,7 +99,7 @@
       </footer>
     </div>
     <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/popper.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     {% block custom_scripts %}{% endblock %}
   </body>
