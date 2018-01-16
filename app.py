@@ -1,5 +1,7 @@
 """Initialize Stepdad."""
 
+import os
+
 from datetime import datetime, timedelta
 from urllib.parse import quote, quote_plus, urlencode
 from uuid import uuid4
@@ -26,7 +28,15 @@ from wtforms.validators import (
 
 
 app = Flask(__name__)
-app.config.from_pyfile('config.cfg')
+
+app.config['SECRET_KEY'] = os.environ.get('MOVIEREX_SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('MOVIEREX_DATABASE_URI')
+app.config['RECAPTCHA_PUBLIC_KEY'] = os.environ.get(
+    'MOVIEREX_RECAPTCHA_PUBLIC_KEY')
+app.config['RECAPTCHA_PRIVATE_KEY'] = os.environ.get(
+    'MOVIEREX_RECAPTCHA_PRIVATE_KEY')
+app.config['TESTING'] = True
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 db = SQLAlchemy(app)
