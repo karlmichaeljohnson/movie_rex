@@ -18,6 +18,7 @@ from flask_login import (
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm, RecaptchaField
 from sqlalchemy import exc, and_  # , or_
+from sqlalchemy.dialects.postgresql import UUID
 from wtforms import (
     SubmitField, StringField, PasswordField,
     TextAreaField, BooleanField,
@@ -108,7 +109,7 @@ def password_matches(form, field):
 
 def new_uuid():
     """Pass back a new uuid hex."""
-    return uuid4().hex
+    return str(uuid4())
 
 
 def thirty_days_from_now():
@@ -240,7 +241,7 @@ class User(UserMixin, db.Model):
     """Instantiate the user object."""
 
     __tablename__ = 'users'
-    id = db.Column(db.String(32), primary_key=True)
+    id = db.Column(UUID, primary_key=True)
     first_name = db.Column(db.String(128), nullable=False)
     last_name = db.Column(db.String(128))
     email = db.Column(db.String(255), unique=True, nullable=False)
@@ -281,11 +282,11 @@ class Recommender(db.Model):
     """Instantiate an object representing the recommender."""
 
     __tablename__ = 'recommenders'
-    id = db.Column(db.String(32), primary_key=True)
+    id = db.Column(UUID, primary_key=True)
     name = db.Column(db.String(32), nullable=False)
     email = db.Column(db.String(255), nullable=False)
     owner_id = db.Column(
-        db.String(32), db.ForeignKey('users.id'), nullable=False)
+        UUID, db.ForeignKey('users.id'), nullable=False)
     created = db.Column(db.DateTime, nullable=False)
     deleted = db.Column(db.DateTime)
 
@@ -305,16 +306,17 @@ class Recommendation(db.Model):
     """Instantiate an object representing a recommendation."""
 
     __tablename__ = 'recommendations'
-    id = db.Column(db.String(32), primary_key=True)
+    id = db.Column(UUID, primary_key=True)
     recommender_id = db.Column(
-        db.String(32), db.ForeignKey('recommenders.id'))
+        UUID, db.ForeignKey('recommenders.id'))
     owner_id = db.Column(
-        db.String(32), db.ForeignKey('users.id'))
+        UUID, db.ForeignKey('users.id'))
     name = db.Column(db.String(256), nullable=False)
     rating = db.Column(db.Integer)
     review = db.Column(db.Text)
     # watched = db.Column(db.Boolean, default=False, nullable=False)
     netflix_search = db.Column(db.Text)
+    imdb_search = db.Column(db.Text)
     rotten_search = db.Column(db.Text)
     hulu_search = db.Column(db.Text)
     created = db.Column(db.DateTime, nullable=False)
@@ -324,6 +326,7 @@ class Recommendation(db.Model):
     def __init__(self, **kwargs):
         """Initialize a recommender object."""
         netflix_url = 'https://www.netflix.com/search?'
+        imdb_url = 'http://www.imdb.com/find?'
         rotten_url = 'https://www.rottentomatoes.com/search/?'
         hulu_url = 'https://www.hulu.com/search?'
 
@@ -333,6 +336,8 @@ class Recommendation(db.Model):
         self.name = kwargs['name']
         self.netflix_search = (
             netflix_url + urlencode({'q': self.name}, quote_via=quote))
+        self.imdb_search = (
+            imdb_url + urlencode({'q': self.name}, quote_via=quote_plus))
         self.rotten_search = (
             rotten_url + urlencode({'search': self.name}, quote_via=quote))
         self.hulu_search = (
@@ -382,9 +387,15 @@ def index():
 
 
 @app.errorhandler(401)
-def unauthorized(e):
+def unauthorized(error):
     """Take the user to the login page if not logged in."""
     return redirect(url_for('login'))
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    """View for error 404."""
+    return render_template('error.html', error=error)
 
 
 @app.route('/account')

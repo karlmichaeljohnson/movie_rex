@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Whole Hog Movie Rex&nbsp;|&nbsp;{% block title %}{% endblock %}</title>
+    <title>Movie Rex&nbsp;|&nbsp;{% block title %}{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" media="screen">
@@ -15,7 +15,7 @@
   <body>
     <div class="navbar navbar-expand-lg fixed-top navbar-dark bg-primary">
       <div class="container">
-        <a href="{{ url_for('index') }}" class="navbar-brand"><i class="fas fa-film"></i>&nbsp;Whole Hog Movie Rex</a>
+        <a href="{{ url_for('index') }}" class="navbar-brand"><i class="fas fa-film"></i>&nbsp;Movie Rex</a>
         <div class="collapse navbar-collapse" id="navbarResponsive">
           {% if current_user.is_authenticated %}
           <ul class="navbar-nav">
