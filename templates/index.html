@@ -18,6 +18,8 @@
         <a href="{{ url_for('index') }}" class="navbar-brand"><i class="fas fa-film"></i>&nbsp;Movie Rex</a>
         <div class="collapse navbar-collapse" id="navbarResponsive">
           {% if current_user.is_authenticated %}
+          <!-- Build out these nav items later. -->
+          <!--
           <ul class="navbar-nav">
             <li class="nav-item">
               <a class="nav-link" href="#"><i class="fa fa-users fa-fw"></i>&nbsp;Recommenders</a>
@@ -32,10 +34,14 @@
               <a class="nav-link" href="{{ url_for('about') }}"><i class="fas fa-info-circle"></i>&nbsp;About</a>
             </li>
           </ul>
+          -->
           <ul class="nav navbar-nav ml-auto">
+            <!-- Build out Account capability later. -->
+            <!-- 
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('account') }}"><i class="fas fa-caret-down"></i>&nbsp;{{ current_user.first_name}} {{ current_user.last_name }}</a>
             </li>
+            -->
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('logout') }}">Logout&nbsp;<i class="fas fa-sign-out-alt"></i></a>
             </li>
@@ -48,9 +54,12 @@
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('signup') }}"><i class="fas fa-user-plus"></i>&nbsp;Sign Up</a>
             </li>
+            <!-- Build the About page later. -->
+            <!--
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('about') }}"><i class="fas fa-info-circle"></i>&nbsp;About</a>
             </li>
+            -->
           </ul>
           {% endif %}
         </div>
