@@ -39,6 +39,12 @@ app.config['RECAPTCHA_PUBLIC_KEY'] = os.environ.get(
 app.config['RECAPTCHA_PRIVATE_KEY'] = os.environ.get(
     'MOVIEREX_RECAPTCHA_PRIVATE_KEY')
 
+app.config['MAIL_SERVER'] = os.environ.get('MOVIEREX_MAIL_SERVER')
+app.config['MAIL_PORT'] = os.environ.get('MOVIEREX_MAIL_PORT')
+app.config['MAIL_USE_SSL'] = os.environ.get('MOVIEREX_MAIL_USE_SSL')
+app.config['MAIL_USERNAME'] = os.environ.get('MOVIEREX_MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MOVIEREX_MAIL_PASSWORD')
+
 app.config['DEBUG'] = True
 app.config['TESTING'] = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -181,6 +187,7 @@ class ReviewForm(FlaskForm):
     rating = SelectField(
         'rating',
         choices=[
+            (None, "Choose a rating"),
             (1, "★"),
             (2, "★★"),
             (3, "★★★"),
@@ -250,6 +257,7 @@ class User(UserMixin, db.Model):
     created = db.Column(db.String(32), nullable=False)
     modified = db.Column(db.String(32))
     deleted = db.Column(db.String(32))
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
     # last_signon = db.Column(db.String(32))
 
     recommenders = db.relationship(
