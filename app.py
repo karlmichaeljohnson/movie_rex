@@ -31,11 +31,17 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = os.environ.get('MOVIEREX_SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('MOVIEREX_DATABASE_URI')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 app.config['RECAPTCHA_PUBLIC_KEY'] = os.environ.get(
     'MOVIEREX_RECAPTCHA_PUBLIC_KEY')
 app.config['RECAPTCHA_PRIVATE_KEY'] = os.environ.get(
     'MOVIEREX_RECAPTCHA_PRIVATE_KEY')
+
+app.config['DEBUG'] = True
 app.config['TESTING'] = True
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -373,6 +379,12 @@ def index():
         reviewed=reviewed,
         today=datetime.utcnow(),
         rec_form=rec_form)
+
+
+@app.errorhandler(401)
+def unauthorized(e):
+    """Take the user to the login page if not logged in."""
+    return redirect(url_for('login'))
 
 
 @app.route('/account')
