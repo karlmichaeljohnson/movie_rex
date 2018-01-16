@@ -204,7 +204,6 @@ class ReviewForm(FlaskForm):
     rating = SelectField(
         'rating',
         choices=[
-            (None, "Choose a rating"),
             (1, "★"),
             (2, "★★"),
             (3, "★★★"),
