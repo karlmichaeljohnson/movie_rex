@@ -15,8 +15,10 @@ from flask_login import (
     LoginManager, UserMixin, login_user,
     login_required, logout_user, current_user
 )
+from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm, RecaptchaField
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from sqlalchemy import exc, and_  # , or_
 from sqlalchemy.dialects.postgresql import UUID
 from wtforms import (
@@ -40,13 +42,15 @@ app.config['RECAPTCHA_PRIVATE_KEY'] = os.environ.get(
     'MOVIEREX_RECAPTCHA_PRIVATE_KEY')
 
 app.config['MAIL_SERVER'] = os.environ.get('MOVIEREX_MAIL_SERVER')
-app.config['MAIL_PORT'] = os.environ.get('MOVIEREX_MAIL_PORT')
-app.config['MAIL_USE_SSL'] = os.environ.get('MOVIEREX_MAIL_USE_SSL')
+app.config['MAIL_PORT'] = int(os.environ.get('MOVIEREX_MAIL_PORT'))
+app.config['MAIL_USE_SSL'] = bool(os.environ.get('MOVIEREX_MAIL_USE_SSL'))
 app.config['MAIL_USERNAME'] = os.environ.get('MOVIEREX_MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MOVIEREX_MAIL_PASSWORD')
 
 app.config['DEBUG'] = True
-app.config['TESTING'] = True
+app.config['MAIL_DEBUG'] = True
+app.config['MAIL_SUPPRESS_SEND'] = False
+# app.config['TESTING'] = True
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 
@@ -54,6 +58,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+mail = Mail(app)
+
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
 # Required functions
@@ -85,6 +92,15 @@ def email_exists(form, field):
         error = Markup("User does not exist. <a href='{}'>"
                        "<strong>Create account</strong></a>"
                        .format(url_for('signup')))
+        raise ValidationError(error)
+
+
+def email_verified(form, field):
+    """Check to see that the user's email address is confirmed."""
+    user = User.query.filter_by(email=field.data.lower()).first()
+    if not user.email_verified:
+        error = Markup("Email address not confirmed. Please "
+                       "check your email.")
         raise ValidationError(error)
 
 
@@ -132,7 +148,8 @@ class LoginForm(FlaskForm):
 
     email = StringField('email', validators=[
         InputRequired(message='Email address required.'),
-        email_exists])
+        email_exists,
+        email_verified])
     password = PasswordField('password', validators=[
         InputRequired(message='Password required.'),
         password_matches])
@@ -426,6 +443,32 @@ def login():
     return render_template('login.html', form=form)
 
 
+@app.route('/confirm_email/<token>', methods=['GET'])
+def confirm_email(token):
+    """Confirm the user's email address."""
+    # token is good for a week (60 * 60 * 24 * 7 = 604800)
+    try:
+        email = serializer.loads(token, salt='confirm_email', max_age=604800)
+    except SignatureExpired as error:
+        return render_template('error.html', error=error)
+
+    try:
+        user = User.query.filter_by(email=email).one()
+    except exc.SQLAlchemyError as error:
+        return render_template('error.html', error=error)
+
+    user.email_verified = True
+
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except exc.SQLAlchemyError as error:
+        db.session.rollback()
+        return render_template('error.html', error=error)
+
+    return render_template('email_verified.html')
+
+
 @app.route('/invite', methods=['GET', 'POST'])
 @login_required
 def invite():
@@ -467,11 +510,32 @@ def signup():
         db.session.add(new_user)
         try:
             db.session.commit()
-        except exc.SQLAlchemyError as e:
+        except exc.SQLAlchemyError as error:
             db.session.rollback()
-            return '<p>{}</p>'.format(e)
+            return render_template('error.html', error=error)
         # flash('When this is done, an email alert will be sent to confirm.')
-        return redirect(url_for('login'))
+
+        token = serializer.dumps(email, salt='confirm_email')
+
+        msg = Message(
+            '[Movie Rex] Please confirm your email address',
+            sender='karl.johnson@wholehog.nyc',
+            recipients=[email])
+
+        link = url_for('confirm_email', token=token, _external=True)
+
+        msg.body = ("Hi {} {},\n\nPlease click the link below to confirm "
+                    "your account.\n\n{}\n\nThanks,\n\n\nKarl"
+                    .format(first_name, last_name, link))
+
+        try:
+            mail.send(msg)
+        except:
+            return render_template(
+                'error.html',
+                error='There was a problem sending your confirmation email.')
+
+        return render_template('check_email.html')
 
     for email, errors in form.errors.items():
         for error in errors:

@@ -1,0 +1,13 @@
+{% extends "index.html" %}
+
+{% block title %}Success{% endblock %}
+
+{% block page_content %}
+
+<div class="jumbotron">
+<h1 class="text-success"><i class="fas fa-exclamation-triangle"></i>&nbsp;Success</h1>
+<hr>
+<h5 class="text-success">Email confirmed! Please <a href="{{ url_for('login') }}">login</a></h5>
+</div>
+
+{% endblock %}
