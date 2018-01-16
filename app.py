@@ -8,8 +8,8 @@ from uuid import uuid4
 
 from email_validator import validate_email, EmailNotValidError
 from flask import (
-    Flask, Markup,  # abort, jsonify
-    flash, redirect, render_template, request, url_for)
+    Flask, Markup,  # abort, jsonify, flash
+    redirect, render_template, request, url_for)
 from flask_bcrypt import Bcrypt
 from flask_login import (
     LoginManager, UserMixin, login_user,
@@ -420,7 +420,7 @@ def login():
     if request.method == 'POST' and form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data.lower()).one()
         login_user(user)
-        flash('Welcome, {}!'.format(current_user.first_name))
+        # flash('Welcome, {}!'.format(current_user.first_name))
         return redirect(url_for('index'))
 
     return render_template('login.html', form=form)
@@ -442,7 +442,7 @@ def invite():
 def logout():
     """Render the logout view."""
     logout_user()
-    flash('You have been logged out.')
+    # flash('You have been logged out.')
     return redirect(url_for('login'))
 
 
@@ -470,7 +470,7 @@ def signup():
         except exc.SQLAlchemyError as e:
             db.session.rollback()
             return '<p>{}</p>'.format(e)
-        flash('When this is done, an email alert will be sent to confirm.')
+        # flash('When this is done, an email alert will be sent to confirm.')
         return redirect(url_for('login'))
 
     for email, errors in form.errors.items():
@@ -510,7 +510,7 @@ def add_recommender():
             return redirect(url_for('index'))
         except:
             db.session.rollback()
-            flash('Database error.')
+            # flash('Database error.')
             return redirect(url_for('index'))
 
     return render_template('add_recommender.html', form=form)
@@ -524,10 +524,10 @@ def delete_recommender(recommender_id):
     if recommender.owner_id == current_user.id:
         recommender.deleted = datetime.utcnow()
         db.session.commit()
-        flash('Recommender deleted.')
+        # flash('Recommender deleted.')
         return redirect(url_for('index'))
     else:
-        flash('You don\'t have access to that recommender.')
+        # flash('You don\'t have access to that recommender.')
         return redirect(url_for('index'))
 
 
@@ -546,7 +546,7 @@ def add_recommendation():
             name=name)
         db.session.add(new_recommendation)
         db.session.commit()
-        flash('Recommendation added.')
+        # flash('Recommendation added.')
         return redirect(url_for('index'))
 
     # form.recommender.choices = select_recommenders(current_user)
@@ -561,10 +561,10 @@ def delete_recommendation(recommendation_id):
     if recommendation.owner_id == current_user.id:
         recommendation.deleted = datetime.utcnow()
         db.session.commit()
-        flash('Recommendation deleted.')
+        # flash('Recommendation deleted.')
         return redirect(url_for('index'))
     else:
-        flash('You don\'t have access to that recommendation.')
+        # flash('You don\'t have access to that recommendation.')
         return redirect(url_for('index'))
 
 
@@ -579,7 +579,7 @@ def watch(recommendation_id):
         db.session.commit()
     except:
         db.session.rollback()
-        return 'There was an error.'
+        return render_template('error.html', error='There was an error.')
     return redirect(url_for('index'))
 
 
@@ -594,7 +594,7 @@ def unwatch(recommendation_id):
         db.session.commit()
     except:
         db.session.rollback()
-        return 'There was an error.'
+        return render_template('error.html', error='There was an error.')
     return redirect(url_for('index'))
 
 
@@ -615,7 +615,7 @@ def add_review(recommendation_id):
             return redirect(url_for('index'))
         except:
             db.session.rollback()
-            return 'There was an error.'
+            return render_template('error.html', error='There was an error.')
 
     return render_template(
         'add_review.html', form=form, recommendation=recommendation)
@@ -638,7 +638,7 @@ def edit_review(recommendation_id):
             return redirect(url_for('index'))
         except:
             db.session.rollback()
-            return 'There was an error.'
+            return render_template('error.html', error='There was an error.')
 
     return render_template(
         'edit_review.html',
@@ -658,7 +658,7 @@ def unreview(recommendation_id):
         db.session.commit()
     except:
         db.session.rollback()
-        return 'There was an error.'
+        return render_template('error.html', error='There was an error.')
 
     return redirect(url_for('index'))
 
