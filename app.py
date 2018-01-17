@@ -1,6 +1,7 @@
-"""Initialize Stepdad."""
+"""Initialize Movie Rex."""
 
 import os
+import requests
 
 from datetime import datetime, timedelta
 from urllib.parse import quote, quote_plus, urlencode
@@ -50,7 +51,7 @@ app.config['MAIL_PASSWORD'] = os.environ.get('MOVIEREX_MAIL_PASSWORD')
 app.config['DEBUG'] = True
 app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SUPPRESS_SEND'] = False
-# app.config['TESTING'] = True
+app.config['TESTING'] = False
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 
@@ -61,6 +62,8 @@ bcrypt = Bcrypt(app)
 mail = Mail(app)
 
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+omdb_apikey = os.environ.get('OMDB_APIKEY')
 
 
 # Required functions
@@ -127,6 +130,18 @@ def password_matches(form, field):
         raise ValidationError()
 
 
+def movie_exists(form, field):
+    """Check OMDb to see if the movie exists."""
+    title = field.data
+    omdb = 'https://www.omdbapi.com/?'
+    link = omdb + urlencode({'t': title, 'apikey': omdb_apikey})
+    result = requests.get(link)
+    omdb_response = result.json()
+    if omdb_response['Response'] != 'True':
+        error = omdb_response['Error']
+        raise ValidationError(error)
+
+
 # Set IDs with uuid
 
 def new_uuid():
@@ -188,8 +203,8 @@ class SignUpForm(FlaskForm):
         InputRequired(message='Birthday required.')])
     password = PasswordField('password', validators=[
         InputRequired(message='Password required.'),
-        Length(min=16, max=160, message='Password must be between '
-                                        '16 and 160 chars.'),
+        Length(min=8, max=160, message='Password must be between '
+                                       '8 and 160 chars.'),
         EqualTo('confirm', message='Passwords must match.')])
     confirm = PasswordField('confirm', validators=[
         InputRequired(message='Please repeat password.'),
@@ -242,7 +257,9 @@ class RecommenderForm(FlaskForm):
 class RecommendationForm(FlaskForm):
     """Instantiate the recommendation form."""
 
-    name = StringField('name', validators=[InputRequired()])
+    name = StringField('name', validators=[
+        InputRequired(),
+        movie_exists])
     recommender = SelectField(
         'recommender', validators=[])
     submit = SubmitField('submit')
