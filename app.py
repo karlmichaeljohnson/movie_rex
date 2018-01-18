@@ -20,8 +20,8 @@ from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm, RecaptchaField
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
-from sqlalchemy import exc, and_  # , or_
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import exc, and_, or_, Enum
+from sqlalchemy.dialects.postgresql import UUID, ENUM
 from wtforms import (
     SubmitField, StringField, PasswordField,
     TextAreaField, BooleanField,
@@ -277,6 +277,33 @@ class RecommendationForm(FlaskForm):
 #################
 
 
+class Friendship(db.Model):
+    """Instantiate the class to hold a friendship."""
+
+    __tablename__ = 'friendships'
+    id = db.Column(UUID, primary_key=True)
+    friend_one_id = db.Column(UUID, db.ForeignKey('users.id'), nullable=False)
+    friend_two_id = db.Column(UUID, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(
+        db.Enum('pending',
+                'active',
+                'declined',
+                'blocked',
+                name='status_types'), nullable=False)
+    friend_one = db.relationship('User', foreign_keys=[friend_one_id])
+    friend_two = db.relationship('User', foreign_keys=[friend_two_id])
+
+    __table_args__ = (db.UniqueConstraint(
+        'friend_one_id', 'friend_two_id', name='_unique_friendship'),)
+
+    def __repr__(self):
+        """Define how friendships will be repr'd."""
+        return '<Friendship {!r} <=> {!r} ({!s})>'.format(
+            self.friend_one.email,
+            self.friend_two.email,
+            self.status)
+
+
 class User(UserMixin, db.Model):
     """Instantiate the user object."""
 
@@ -308,6 +335,39 @@ class User(UserMixin, db.Model):
         self.password = kwargs['password']
         self.birthday = kwargs['birthday']
         self.created = datetime.utcnow()
+
+    friendships = db.relationship(
+        'Friendship',
+        primaryjoin='or_((users.c.id == friendships.c.friend_one_id), '
+                    '(users.c.id == friendships.c.friend_two_id))',
+        lazy='dynamic')
+
+    def friends(self):
+        """Return a list of the user's friends."""
+        friends = []
+        fs = [f for f in self.friendships.all() if f.status == 'active']
+        for f in fs:
+            if f.friend_one != self and f.friend_two == self:
+                friends.append(f.friend_one)
+            elif f.friend_two != self and f.friend_one == self:
+                friends.append(f.friend_two)
+            else:
+                raise Exception('Friendship is not valid.')
+        return friends
+
+    friend_requests_sent = db.relationship(
+        'User',
+        secondary=Friendship.__table__,
+        primaryjoin='(users.c.id == friendships.c.friend_one_id)',
+        secondaryjoin='(users.c.id == friendships.c.friend_two_id)',
+        lazy='dynamic')
+
+    friend_requests_received = db.relationship(
+        'User',
+        secondary=Friendship.__table__,
+        primaryjoin='(users.c.id == friendships.c.friend_two_id)',
+        secondaryjoin='(users.c.id == friendships.c.friend_one_id)',
+        lazy='dynamic')
 
     def __repr__(self):
         """Define how the User class will be repr'd."""
