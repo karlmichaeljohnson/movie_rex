@@ -20,8 +20,8 @@ from flask_mail import Mail, Message
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm, RecaptchaField
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
-from sqlalchemy import exc, and_, or_, Enum
-from sqlalchemy.dialects.postgresql import UUID, ENUM
+from sqlalchemy import exc, and_  # , or_, Enum
+from sqlalchemy.dialects.postgresql import UUID  # , ENUM
 from wtforms import (
     SubmitField, StringField, PasswordField,
     TextAreaField, BooleanField,
@@ -130,13 +130,25 @@ def password_matches(form, field):
         raise ValidationError()
 
 
+def omdb_query(query_term, by='title'):
+    """Query OMDb and return the result."""
+    omdb = 'https://www.omdbapi.com/?'
+    if by == 'title':
+        omdb_request = omdb + urlencode(
+            {'t': query_term, 'r': 'json', 'apikey': omdb_apikey})
+    elif by == 'imdb_id':
+        omdb_request = omdb + urlencode(
+            {'i': query_term, 'r': 'json', 'apikey': omdb_apikey})
+
+    result = requests.get(omdb_request)
+    omdb_response = result.json()
+    return omdb_response
+
+
 def movie_exists(form, field):
     """Check OMDb to see if the movie exists."""
     title = field.data
-    omdb = 'https://www.omdbapi.com/?'
-    link = omdb + urlencode({'t': title, 'apikey': omdb_apikey})
-    result = requests.get(link)
-    omdb_response = result.json()
+    omdb_response = omdb_query(title)
     if omdb_response['Response'] != 'True':
         error = omdb_response['Error']
         raise ValidationError(error)
@@ -219,12 +231,13 @@ class ReviewForm(FlaskForm):
     rating = SelectField(
         'rating',
         choices=[
+            (0, "Choose a rating."),
             (1, "★"),
             (2, "★★"),
             (3, "★★★"),
             (4, "★★★★"),
             (5, "★★★★★")],
-        default=3,
+        default=0,
         coerce=int,
         validators=[InputRequired()])
     review = TextAreaField('review', validators=[InputRequired()])
@@ -379,6 +392,16 @@ class User(UserMixin, db.Model):
 #         self.last_signon = datetime.utcnow()
 
 
+class Movie(db.Model):
+    """Instantiate the object representing the movie."""
+
+    __tablename__ = 'movies'
+    id = db.Column(UUID, primary_key=True)
+    imdb_id = db.Column(db.String(12), unique=True)
+    title = db.Column(db.Text)
+    poster_href = db.Column(db.Text)
+
+
 class Recommender(db.Model):
     """Instantiate an object representing the recommender."""
 
@@ -496,6 +519,12 @@ def unauthorized(error):
 @app.errorhandler(404)
 def page_not_found(error):
     """View for error 404."""
+    return render_template('error.html', error=error)
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    """View for internal server error."""
     return render_template('error.html', error=error)
 
 
@@ -691,6 +720,40 @@ def add_recommendation():
 
     # form.recommender.choices = select_recommenders(current_user)
     return render_template('add_recommendation.html', form=form)
+
+
+@app.route('/add_movie', methods=['GET', 'POST'])
+@login_required
+def add_movie():
+    """Add a new movie."""
+    form = None
+
+    if request.method == 'POST' and form.validate_on_submit():
+        query_term = form.title.data
+        omdb_response = omdb_query(query_term)
+        title = omdb_response['Title']
+        imdb_id = omdb_response['imdbID']
+        poster_href = omdb_response['Poster']
+
+        if (db.session.query(
+           db.exists().where(Movie.imdb_id == imdb_id)).scalar()):
+            return render_template('movie.html', movie=omdb_response)
+            # return redirect(url_for('index'))
+
+        new_movie = Movie(
+            id=new_uuid(),
+            title=title,
+            imdb_id=imdb_id,
+            poster_href=poster_href)
+        db.session.add(new_movie)
+        try:
+            db.session.commit()
+            return render_template('movie.html', movie=omdb_response)
+        except exc.SQLAlchemyError as error:
+            db.session.rollback()
+            return render_template('error.html', error=error)
+
+    return render_template(None, form=form)
 
 
 @app.route('/delete_recommendation/<recommendation_id>', methods=['POST'])
