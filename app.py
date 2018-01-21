@@ -339,6 +339,9 @@ class User(UserMixin, db.Model):
     recommendations = db.relationship(
         'Recommendation', backref='owner', lazy='dynamic')
 
+    reviews = db.relationship(
+        'Review', backref='owner', lazy='dynamic')
+
     def __init__(self, **kwargs):
         """Initialize a new user."""
         self.id = new_uuid()
@@ -400,6 +403,17 @@ class Movie(db.Model):
     imdb_id = db.Column(db.String(12), unique=True)
     title = db.Column(db.Text)
     poster_href = db.Column(db.Text)
+
+
+class Review(db.Model):
+    """Instantiate the object representing a review."""
+
+    __tablename__ = 'reviews'
+    id = db.Column(UUID, primary_key=True)
+    movie_id = db.Column(UUID, db.ForeignKey('movies.id'))
+    owner_id = db.Column(UUID, db.ForeignKey('users.id'))
+
+    movie = db.relationship('Movie', backref='review', lazy='dynamic')
 
 
 class Recommender(db.Model):
