@@ -413,7 +413,7 @@ class Review(db.Model):
     movie_id = db.Column(UUID, db.ForeignKey('movies.id'))
     owner_id = db.Column(UUID, db.ForeignKey('users.id'))
 
-    movie = db.relationship('Movie', backref='review', lazy='dynamic')
+    movie = db.relationship('Movie', backref='review')
 
 
 class Recommender(db.Model):
